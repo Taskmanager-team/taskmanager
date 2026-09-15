@@ -6,7 +6,11 @@ using System.Threading.Tasks;
 
 namespace TaskManager.Domain.Exceptions
 {
-    internal class Exceptions
+    public class DomainExceptions : Exception
     {
+        public DomainExceptions(string message) : base(message)
+        {
+        }
     }
+
 }
