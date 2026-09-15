@@ -22,8 +22,7 @@ namespace TaskManager.Domain.Entities
 
         public Guid ProjectManagerId { get; private set; }
 
-        public ICollection<TaskItem> Tasks { get; private set; }
-            = new List<TaskItem>();
+       
 
     // Constructeur privé pour EF Core
         private Project()
@@ -83,18 +82,7 @@ namespace TaskManager.Domain.Entities
             Status = ProjectStatus.Active;
         }
 
-        // Ajouter une tâche
-        public void AddTask(TaskItem task)
-        {
-            if (Status == ProjectStatus.Archived)
-                throw new InvalidOperationException(
-                    "Un projet archivé ne peut pas recevoir de nouvelles tâches.");
-
-            if (task == null)
-                throw new ArgumentNullException(nameof(task));
-
-            Tasks.Add(task);
-        }
+        
     }
 }
 
