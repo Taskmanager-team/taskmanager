@@ -10,9 +10,9 @@ namespace TaskManager.Domain.Entities
 {
     public class User : BaseEntity
     {
+       
         public string FirstName { get; private set; }
         public string LastName { get; private set; }
-        public string Email { get; private set; }
         private User() { } // requis par EF Core
         public User(string firstName, string lastName, string email, string passwordHash)
         {
@@ -24,9 +24,9 @@ namespace TaskManager.Domain.Entities
                 throw new DomainExceptions("L'email est obligatoire.");
             if (string.IsNullOrWhiteSpace(passwordHash))
                 throw new DomainExceptions("Le mot de passe est obligatoire.");
+
             FirstName = firstName;
             LastName = lastName;
-            Email = email;
       
         }
     }

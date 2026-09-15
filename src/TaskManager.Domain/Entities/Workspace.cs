@@ -22,7 +22,7 @@ namespace TaskManager.Domain.Entities
 
         public ICollection<WorkspaceMember> Members { get; private set; }
             = new List<WorkspaceMember>();
-    }
+  
     // Constructeur utilisé par EF Core
         private Workspace()
         {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using TaskManager.Domain.Common;
 using TaskManager.Domain.Enums;
 using TaskManager.Domain.Exceptions;
@@ -24,6 +25,12 @@ namespace TaskManager.Domain.Entities
         public Guid ProjectId { get; private set; }
 
         private readonly List<Guid> _assignedUserIds = new();
+
+        private readonly List<Comments> _comments = new();
+
+        public IReadOnlyCollection<Comments> Comments
+            => _comments.AsReadOnly();
+
 
         public IReadOnlyCollection<Guid> AssignedUserIds
             => _assignedUserIds.AsReadOnly();
