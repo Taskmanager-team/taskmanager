@@ -15,7 +15,7 @@ namespace TaskManager.Infrastructure.Persistence
 
         public DbSet<Workspace> Workspaces => Set<Workspace>();
         public DbSet<Project> Projects => Set<Project>();
-        public DbSet<TaskItem> Tasks => Set<TaskItem>();
+        public DbSet<TaskItem> TaskItems => Set<TaskItem>();
         public DbSet<WorkspaceMember> WorkspaceMembers => Set<WorkspaceMember>();
         public DbSet<User> Members => Set<User>();
 
