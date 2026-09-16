@@ -1,0 +1,1 @@
+[![CI](https://github.com/Taskmanager-team/taskmanager/actions/workflows/ci.yml/badge.svg)](https://github.com/Taskmanager-team/taskmanager/actions/workflows/ci.yml)
