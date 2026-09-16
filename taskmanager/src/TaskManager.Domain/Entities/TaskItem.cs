@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,7 +12,7 @@ namespace TaskManager.Domain.Entities
 {
     public class TaskItem : BaseEntity
     {
-        public string Title { get; private set; }
+        public string Title { get; private set; } = string.Empty;
 
         public string? Description { get; private set; }
 

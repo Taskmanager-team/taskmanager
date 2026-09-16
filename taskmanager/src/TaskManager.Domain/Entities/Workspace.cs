@@ -12,7 +12,7 @@ namespace TaskManager.Domain.Entities
 {
     public class Workspace : BaseEntity
     {
-        public string Name { get; private set; }
+        public string Name { get; private set; } = string.Empty;
         public string? Description { get; private set; }
 
         public Guid OwnerId { get; private set; }

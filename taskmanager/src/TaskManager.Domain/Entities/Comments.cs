@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,7 +11,7 @@ namespace TaskManager.Domain.Entities
 {
     public class Comments: BaseEntity
     {
-        public String Content { get; private set; }
+        public string Content { get; private set; } = string.Empty;
         public Guid TaskItemId { get; private set; }
         public Guid AuthorId { get; private set; }
 

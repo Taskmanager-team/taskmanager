@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,7 +10,7 @@ namespace TaskManager.Domain.Entities
 {
     public class Project : BaseEntity
     {
-        public string Name { get; private set; }
+        public string Name { get; private set; } = string.Empty;
         public string? Description { get; private set; }
 
         public ProjectStatus Status { get; private set; }
@@ -22,6 +22,7 @@ namespace TaskManager.Domain.Entities
 
         public Guid ProjectManagerId { get; private set; }
 
+        public ICollection<TaskItem> Tasks { get; private set; } = new List<TaskItem>();
        
 
     // Constructeur privé pour EF Core
