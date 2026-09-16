@@ -1,7 +1,7 @@
 using TaskManager.Domain.Entities;
 using TaskManager.Domain.Enums;
 using System.Threading.Tasks;
-namespace TaskManager.Domain.Interfaces
+namespace TaskManager.Application.Interfaces
 {
     public interface ITaskRepository
     {

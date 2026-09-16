@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
-using TaskManager.Domain.Interfaces;
+using TaskManager.Application.Interfaces;
 using TaskManager.Infrastructure.Persistence.Repositories;
 using TaskManager.Infrastructure.Persistence;
 using TaskManager.Infrastructure.Identity;
