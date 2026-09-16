@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,8 +15,8 @@ namespace TaskManager.Domain.Entities
         public Guid UserId { get; private set; }
 
         public WorkspaceRole Role { get; private set; }
-    }
-    private WorkspaceMember() { } // requis par EF Core
+
+        private WorkspaceMember() { } // requis par EF Core
 
         public WorkspaceMember(Guid workspaceId, Guid userId, WorkspaceRole role)
         {
@@ -28,11 +28,13 @@ namespace TaskManager.Domain.Entities
 
             WorkspaceId = workspaceId;
             UserId = userId;
-            Role = role; }
-    public void ChangeRole(WorkspaceRole role)
+            Role = role;
+        }
+
+        public void ChangeRole(WorkspaceRole role)
         {
             Role = role;
         }
     }
-    } 
+}
 
