@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "AwhlsikBKrc=",
+  "success": true,
+  "projectFilePath": "/Users/khaled/Desktop/ProjetTaskManager/src/TaskManager.Domain/TaskManager.Domain.csproj",
+  "expectedPackageFiles": [
+    "/Users/khaled/.nuget/packages/microsoft.netcore.app.ref/9.0.14/microsoft.netcore.app.ref.9.0.14.nupkg.sha512",
+    "/Users/khaled/.nuget/packages/microsoft.aspnetcore.app.ref/9.0.14/microsoft.aspnetcore.app.ref.9.0.14.nupkg.sha512"
+  ],
+  "logs": []
+}
