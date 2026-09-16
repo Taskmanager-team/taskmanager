@@ -1,6 +1,6 @@
 using TaskManager.Domain.Entities;
 
-namespace TaskManager.Domain.Interfaces
+namespace TaskManager.Application.Interfaces
 {
     public interface IWorkspaceRepository
     {
