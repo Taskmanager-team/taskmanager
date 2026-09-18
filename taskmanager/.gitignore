@@ -5,6 +5,8 @@
 
 # dotenv files
 .env
+appsettings.Development.json
+appsettings.Local.json
 
 # User-specific files
 *.rsuser
@@ -81,6 +83,7 @@ StyleCopReport.xml
 *.ilk
 *.meta
 *.obj
+bin/
 *.iobj
 *.pch
 *.pdb

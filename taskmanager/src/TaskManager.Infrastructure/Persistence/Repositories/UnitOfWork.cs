@@ -10,17 +10,21 @@ namespace TaskManager.Infrastructure.Persistence.Repositories
         public ITaskRepository Tasks { get; }
         public IProjectRepository Projects { get; }
         public IWorkspaceRepository Workspaces { get; }
+        public IUserRepository Users { get; }
 
         public UnitOfWork(
             ApplicationDbContext context,
             ITaskRepository taskRepository,
             IProjectRepository projectRepository,
-            IWorkspaceRepository workspaceRepository)
+            IWorkspaceRepository workspaceRepository,
+            IUserRepository userRepository
+            )
         {
             _context = context;
             Tasks = taskRepository;
             Projects = projectRepository;
             Workspaces = workspaceRepository;
+            Users = userRepository;
         }
 
         public Task<int> SaveChangesAsync(CancellationToken ct = default)
