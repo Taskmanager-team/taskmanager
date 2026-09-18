@@ -22,13 +22,9 @@ namespace TaskManager.Infrastructure.Persistence.Configuration
         builder.HasIndex(t => t.Status);
 
         // Mappe la liste de Guid vers une vraie table de jointure
-        builder.OwnsMany(typeof(Guid), "_assignedUserIds", a =>
-        {
-            a.ToTable("TaskItemUsers");
-            a.WithOwner().HasForeignKey("TaskItemId");
-            a.Property(typeof(Guid), "Value").HasColumnName("UserId");
-            a.HasKey("TaskItemId", "Value");
-        });
+       // ✅ Fonctionne — mappe une collection de types primitifs directement
+        builder.PrimitiveCollection<List<Guid>>("_assignedUserIds")
+            .HasColumnName("AssignedUserIds");
     }
 }
 }
