@@ -1,0 +1,887 @@
+openapi: 3.0.3
+info:
+  title: TaskFlow Pro API
+  version: "0.1.0"
+  description: >
+    Contrat v0 - a faire evoluer par Pull Request, revue obligatoire par les 3 membres.
+    Decision SCRUM-16 : une tache est assignee a UN SEUL utilisateur (AssignedUserId).
+
+servers:
+  - url: http://localhost:5000
+    description: Local (dotnet run)
+  - url: http://localhost:5000
+    description: Local (docker-compose)
+
+tags:
+  - name: Auth
+  - name: Workspaces
+  - name: Projects
+  - name: Tasks
+  - name: Comments
+  - name: Notifications
+
+paths:
+
+  # ---------- AUTH ----------
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Creer un compte
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Compte cree
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '409':
+          description: Email deja utilise
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Se connecter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Connexion reussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Identifiants invalides
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /api/auth/refresh-token:
+    post:
+      tags: [Auth]
+      summary: Renouveler le token via le refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Nouveau couple de tokens
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Refresh token invalide, expire ou deja utilise
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  # ---------- WORKSPACES ----------
+  /api/workspaces:
+    get:
+      tags: [Workspaces]
+      summary: Lister mes workspaces
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Liste des workspaces de l'utilisateur courant
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkspaceDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Workspaces]
+      summary: Creer un workspace
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  maxLength: 150
+      responses:
+        '201':
+          description: Workspace cree, le createur devient Admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceDto'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/workspaces/{workspaceId}/members:
+    get:
+      tags: [Workspaces]
+      summary: Lister les membres d'un workspace
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+      responses:
+        '200':
+          description: Liste des membres
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkspaceMemberDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Workspaces]
+      summary: Inviter un membre (par email, doit deja avoir un compte)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '201':
+          description: Membre invite
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceMemberDto'
+        '404':
+          description: Aucun utilisateur avec cet email
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Deja membre du workspace
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/workspaces/{workspaceId}/members/{userId}/role:
+    patch:
+      tags: [Workspaces]
+      summary: Changer le role d'un membre (reserve aux Admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  $ref: '#/components/schemas/WorkspaceRole'
+      responses:
+        '200':
+          description: Role mis a jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceMemberDto'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Refuse un workspace sans Admin restant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  # ---------- PROJECTS ----------
+  /api/workspaces/{workspaceId}/projects:
+    get:
+      tags: [Projects]
+      summary: Lister les projets d'un workspace
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - name: includeArchived
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: Liste des projets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjectDto'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Projects]
+      summary: Creer un projet
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 150 }
+                description: { type: string, nullable: true }
+      responses:
+        '201':
+          description: Projet cree
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDto'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/projects/{projectId}:
+    get:
+      tags: [Projects]
+      summary: Recuperer un projet
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Le projet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    patch:
+      tags: [Projects]
+      summary: Modifier un projet
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 150 }
+                description: { type: string, nullable: true }
+      responses:
+        '200':
+          description: Projet modifie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDto'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/projects/{projectId}/archive:
+    post:
+      tags: [Projects]
+      summary: Archiver un projet
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Projet archive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDto'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ---------- TASKS ----------
+  /api/projects/{projectId}/tasks:
+    get:
+      tags: [Tasks]
+      summary: Lister/filtrer/rechercher les taches d'un projet
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/TaskItemStatus'
+        - name: assignedUserId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: priority
+          in: query
+          schema:
+            $ref: '#/components/schemas/TaskPriority'
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1, minimum: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, default: 20, maximum: 100 }
+      responses:
+        '200':
+          description: Page de taches
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskItemPage'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Tasks]
+      summary: Creer une tache
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, priority]
+              properties:
+                title: { type: string, maxLength: 200 }
+                description: { type: string, nullable: true }
+                priority:
+                  $ref: '#/components/schemas/TaskPriority'
+                dueDate: { type: string, format: date, nullable: true }
+      responses:
+        '201':
+          description: Tache creee
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskItemDto'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          description: Projet archive, creation refusee
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /api/tasks/{taskId}:
+    get:
+      tags: [Tasks]
+      summary: Recuperer le detail d'une tache
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: Detail de la tache
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskItemDetailDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Tasks]
+      summary: Modifier titre, description, priorite ou echeance
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string, maxLength: 200 }
+                description: { type: string, nullable: true }
+                priority:
+                  $ref: '#/components/schemas/TaskPriority'
+                dueDate: { type: string, format: date, nullable: true }
+      responses:
+        '200':
+          description: Tache modifiee
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskItemDto'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/tasks/{taskId}/status:
+    put:
+      tags: [Tasks]
+      summary: Deplacer la tache vers un nouveau statut (drag and drop)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+        - name: If-Match
+          in: header
+          required: false
+          description: Jeton de concurrence (version de la tache), pour detecter un conflit
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  $ref: '#/components/schemas/TaskItemStatus'
+      responses:
+        '200':
+          description: Statut mis a jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskItemDto'
+        '409':
+          description: Transition invalide OU conflit de concurrence
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '422':
+          description: Transition refusee par une regle metier (ex. Done sans assigne)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /api/tasks/{taskId}/assignee:
+    put:
+      tags: [Tasks]
+      summary: Assigner la tache a un utilisateur (remplace l'assignation existante)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId]
+              properties:
+                userId: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Tache assignee
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskItemDto'
+        '404':
+          description: Utilisateur non membre du workspace du projet
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    delete:
+      tags: [Tasks]
+      summary: Retirer l'assignation
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: Tache desassignee
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskItemDto'
+        '409':
+          description: Refuse si la tache est Done (regle metier)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  # ---------- COMMENTS ----------
+  /api/tasks/{taskId}/comments:
+    get:
+      tags: [Comments]
+      summary: Lister les commentaires d'une tache (paginee)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: Page de commentaires
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommentDto'
+    post:
+      tags: [Comments]
+      summary: Ajouter un commentaire
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content: { type: string, maxLength: 2000 }
+      responses:
+        '201':
+          description: Commentaire cree
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentDto'
+
+  /api/comments/{commentId}:
+    delete:
+      tags: [Comments]
+      summary: Supprimer un commentaire (auteur ou Admin uniquement)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Supprime
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ---------- NOTIFICATIONS ----------
+  /api/notifications:
+    get:
+      tags: [Notifications]
+      summary: Lister mes notifications (paginee)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: Page de notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NotificationDto'
+
+  /api/notifications/{notificationId}/read:
+    patch:
+      tags: [Notifications]
+      summary: Marquer une notification comme lue
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Notification mise a jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationDto'
+
+  /api/notifications/read-all:
+    patch:
+      tags: [Notifications]
+      summary: Marquer toutes les notifications comme lues
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204':
+          description: Fait
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    WorkspaceId:
+      name: workspaceId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    TaskId:
+      name: taskId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Unauthorized:
+      description: Token absent ou invalide
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    Forbidden:
+      description: Authentifie mais non autorise sur cette ressource
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    NotFound:
+      description: Ressource introuvable
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ValidationError:
+      description: Erreur de validation des champs envoyes
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ValidationProblemDetails'
+
+  schemas:
+
+    # ----- format d'erreur commun (RFC 7807) -----
+    ProblemDetails:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        traceId: { type: string }
+
+    ValidationProblemDetails:
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetails'
+        - type: object
+          properties:
+            errors:
+              type: object
+              additionalProperties:
+                type: array
+                items: { type: string }
+
+    # ----- enums -----
+    TaskItemStatus:
+      type: string
+      enum: [ToDo, InProgress, InReview, Done]
+    TaskPriority:
+      type: string
+      enum: [Low, Medium, High, Urgent]
+    WorkspaceRole:
+      type: string
+      enum: [Member, Admin]
+    ProjectStatus:
+      type: string
+      enum: [Active, Archived]
+
+    # ----- auth -----
+    RegisterRequest:
+      type: object
+      required: [email, password, fullName]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8 }
+        fullName: { type: string, maxLength: 150 }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+
+    AuthResponse:
+      type: object
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        expiresAtUtc: { type: string, format: date-time }
+        user:
+          $ref: '#/components/schemas/UserDto'
+
+    UserDto:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        fullName: { type: string }
+
+    # ----- workspaces -----
+    WorkspaceDto:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        createdAt: { type: string, format: date-time }
+        myRole:
+          $ref: '#/components/schemas/WorkspaceRole'
+
+    WorkspaceMemberDto:
+      type: object
+      properties:
+        userId: { type: string, format: uuid }
+        email: { type: string, format: email }
+        fullName: { type: string }
+        role:
+          $ref: '#/components/schemas/WorkspaceRole'
+
+    # ----- projects -----
+    ProjectDto:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        workspaceId: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        status:
+          $ref: '#/components/schemas/ProjectStatus'
+        createdAt: { type: string, format: date-time }
+        taskCount: { type: integer }
+
+    # ----- tasks -----
+    TaskItemDto:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        projectId: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        status:
+          $ref: '#/components/schemas/TaskItemStatus'
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
+        dueDate: { type: string, format: date, nullable: true }
+        assignedUserId: { type: string, format: uuid, nullable: true }
+        assignedUserName: { type: string, nullable: true }
+        commentCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    TaskItemDetailDto:
+      allOf:
+        - $ref: '#/components/schemas/TaskItemDto'
+        - type: object
+          properties:
+            comments:
+              type: array
+              items:
+                $ref: '#/components/schemas/CommentDto'
+
+    TaskItemPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskItemDto'
+        page: { type: integer }
+        pageSize: { type: integer }
+        totalCount: { type: integer }
+
+    # ----- comments -----
+    CommentDto:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        taskId: { type: string, format: uuid }
+        content: { type: string }
+        authorId: { type: string, format: uuid }
+        authorName: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    # ----- notifications -----
+    NotificationDto:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        message: { type: string }
+        isRead: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        relatedTaskId: { type: string, format: uuid, nullable: true }

@@ -1,5 +1,5 @@
-import { NavLink, Outlet } from 'react-router-dom'
-import { USE_MOCKS } from '../api/config'
+import { NavLink, Outlet } from 'react-router-dom';
+import { USE_MOCKS } from '../api/config';
 
 /** Cadre commun a toutes les pages : le contenu de la route s'affiche dans <Outlet />. */
 export function Layout() {
@@ -18,5 +18,5 @@ export function Layout() {
         <Outlet />
       </main>
     </div>
-  )
+  );
 }

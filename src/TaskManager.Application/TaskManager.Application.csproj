@@ -4,13 +4,6 @@
     <ProjectReference Include="..\TaskManager.Domain\TaskManager.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Common\" />
-    <Folder Include="Auth\" />
-    <Folder Include="Tasks\" />
-    <Folder Include="Projects\" />
-  </ItemGroup>
-
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

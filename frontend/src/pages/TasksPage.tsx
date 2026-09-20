@@ -1,22 +1,22 @@
-import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { useCreateTask, useTasks } from '../api/queries'
+import { useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { useCreateTask, useTasks } from '../api/queries';
 
 export function TasksPage() {
-  const { projectId = '' } = useParams<{ projectId: string }>()
-  const { data, isPending, error } = useTasks(projectId)
-  const createTask = useCreateTask(projectId)
-  const [title, setTitle] = useState('')
+  const { projectId = '' } = useParams<{ projectId: string }>();
+  const { data, isPending, error } = useTasks(projectId);
+  const createTask = useCreateTask(projectId);
+  const [title, setTitle] = useState('');
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const trimmed = title.trim()
-    if (!trimmed) return
-    createTask.mutate(trimmed, { onSuccess: () => setTitle('') })
+    event.preventDefault();
+    const trimmed = title.trim();
+    if (!trimmed) return;
+    createTask.mutate(trimmed, { onSuccess: () => setTitle('') });
   }
 
-  if (isPending) return <p className="state">Chargement des taches...</p>
-  if (error) return <p className="state state-error">{error.message}</p>
+  if (isPending) return <p className="state">Chargement des taches...</p>;
+  if (error) return <p className="state state-error">{error.message}</p>;
 
   return (
     <section>
@@ -36,7 +36,9 @@ export function TasksPage() {
           {createTask.isPending ? 'Ajout...' : 'Ajouter'}
         </button>
       </form>
-      {createTask.error && <p className="state state-error">{createTask.error.message}</p>}
+      {createTask.error && (
+        <p className="state state-error">{createTask.error.message}</p>
+      )}
 
       <ul className="card-list">
         {data?.items?.map((task) => (
@@ -50,5 +52,5 @@ export function TasksPage() {
       </ul>
       <p className="meta">{data?.totalCount ?? 0} tache(s) au total</p>
     </section>
-  )
+  );
 }

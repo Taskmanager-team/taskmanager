@@ -1,0 +1,6 @@
+node_modules
+dist
+
+# Fichiers generes : ne pas reformater, ils sont reecrits par des outils
+src/api/schema.d.ts
+public/mockServiceWorker.js

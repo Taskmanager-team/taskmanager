@@ -1,12 +1,12 @@
-import { Link, useParams } from 'react-router-dom'
-import { useProjects } from '../api/queries'
+import { Link, useParams } from 'react-router-dom';
+import { useProjects } from '../api/queries';
 
 export function ProjectsPage() {
-  const { workspaceId = '' } = useParams<{ workspaceId: string }>()
-  const { data, isPending, error } = useProjects(workspaceId)
+  const { workspaceId = '' } = useParams<{ workspaceId: string }>();
+  const { data, isPending, error } = useProjects(workspaceId);
 
-  if (isPending) return <p className="state">Chargement des projets...</p>
-  if (error) return <p className="state state-error">{error.message}</p>
+  if (isPending) return <p className="state">Chargement des projets...</p>;
+  if (error) return <p className="state state-error">{error.message}</p>;
 
   return (
     <section>
@@ -23,5 +23,5 @@ export function ProjectsPage() {
         ))}
       </ul>
     </section>
-  )
+  );
 }

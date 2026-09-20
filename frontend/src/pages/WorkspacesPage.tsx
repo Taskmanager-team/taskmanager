@@ -1,11 +1,11 @@
-import { Link } from 'react-router-dom'
-import { useWorkspaces } from '../api/queries'
+import { Link } from 'react-router-dom';
+import { useWorkspaces } from '../api/queries';
 
 export function WorkspacesPage() {
-  const { data, isPending, error } = useWorkspaces()
+  const { data, isPending, error } = useWorkspaces();
 
-  if (isPending) return <p className="state">Chargement des workspaces...</p>
-  if (error) return <p className="state state-error">{error.message}</p>
+  if (isPending) return <p className="state">Chargement des workspaces...</p>;
+  if (error) return <p className="state state-error">{error.message}</p>;
 
   return (
     <section>
@@ -19,5 +19,5 @@ export function WorkspacesPage() {
         ))}
       </ul>
     </section>
-  )
+  );
 }
