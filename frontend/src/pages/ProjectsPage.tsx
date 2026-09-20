@@ -1,27 +1,64 @@
 import { Link, useParams } from 'react-router-dom';
 import { useProjects } from '../api/queries';
+import { SkeletonList } from '../components/SkeletonList';
 
 export function ProjectsPage() {
   const { workspaceId = '' } = useParams<{ workspaceId: string }>();
   const { data, isPending, error } = useProjects(workspaceId);
 
-  if (isPending) return <p className="state">Chargement des projets...</p>;
-  if (error) return <p className="state state-error">{error.message}</p>;
-
   return (
     <section>
       <Link to="/" className="back">
-        Retour aux workspaces
+        &lsaquo; Workspaces
       </Link>
-      <h1>Projets</h1>
-      <ul className="card-list">
-        {data?.map((project) => (
-          <li key={project.id} className="card">
-            <Link to={`/projects/${project.id}/tasks`}>{project.name}</Link>
-            <span className="meta">{project.taskCount} tache(s)</span>
-          </li>
-        ))}
-      </ul>
+
+      <div className="page-head">
+        <h1>Projets</h1>
+        <p className="subtitle">
+          {data ? `${data.length} projet(s) dans cet espace` : ' '}
+        </p>
+      </div>
+
+      {isPending && <SkeletonList />}
+      {error && <p className="state state-error">{error.message}</p>}
+
+      {data && data.length === 0 && (
+        <p className="empty">Aucun projet dans ce workspace.</p>
+      )}
+
+      {data && data.length > 0 && (
+        <ul className="card-list">
+          {data.map((project) => (
+            <li key={project.id}>
+              <Link
+                to={`/projects/${project.id}/tasks`}
+                className="card card-link"
+              >
+                <div className="card-body">
+                  <span className="card-title">{project.name}</span>
+                  <span className="meta">
+                    {project.taskCount ?? 0} tache(s)
+                  </span>
+                </div>
+                <div className="card-side">
+                  <span
+                    className={
+                      project.status === 'Archived'
+                        ? 'pill pill-todo'
+                        : 'pill pill-done'
+                    }
+                  >
+                    {project.status === 'Archived' ? 'Archive' : 'Actif'}
+                  </span>
+                  <span className="chevron" aria-hidden="true">
+                    &rsaquo;
+                  </span>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

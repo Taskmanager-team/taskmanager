@@ -22,3 +22,17 @@ export function toError(problem: unknown, fallback: string): Error {
   }
   return new Error(fallback);
 }
+
+/**
+ * Deballe une reponse openapi-fetch. Sans corps ni erreur typee (backend
+ * injoignable, reponse vide), on leve un message lisible plutot que de laisser
+ * TanStack Query afficher son « data is undefined ».
+ */
+export function unwrap<T>(
+  result: { data?: T; error?: unknown },
+  fallback: string,
+): T {
+  if (result.error) throw toError(result.error, fallback);
+  if (result.data === undefined) throw new Error(fallback);
+  return result.data;
+}

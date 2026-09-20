@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, toError } from './client';
+import { api, unwrap } from './client';
 
 /** Cles de cache TanStack Query, centralisees pour pouvoir les invalider. */
 export const queryKeys = {
@@ -12,40 +12,37 @@ export const queryKeys = {
 export function useWorkspaces() {
   return useQuery({
     queryKey: queryKeys.workspaces,
-    queryFn: async () => {
-      const { data, error } = await api.GET('/api/workspaces');
-      if (error) throw toError(error, 'Impossible de charger les workspaces');
-      return data;
-    },
+    queryFn: async () =>
+      unwrap(
+        await api.GET('/api/workspaces'),
+        'Impossible de charger les workspaces',
+      ),
   });
 }
 
 export function useProjects(workspaceId: string) {
   return useQuery({
     queryKey: queryKeys.projects(workspaceId),
-    queryFn: async () => {
-      const { data, error } = await api.GET(
-        '/api/workspaces/{workspaceId}/projects',
-        {
+    queryFn: async () =>
+      unwrap(
+        await api.GET('/api/workspaces/{workspaceId}/projects', {
           params: { path: { workspaceId } },
-        },
-      );
-      if (error) throw toError(error, 'Impossible de charger les projets');
-      return data;
-    },
+        }),
+        'Impossible de charger les projets',
+      ),
   });
 }
 
 export function useTasks(projectId: string) {
   return useQuery({
     queryKey: queryKeys.tasks(projectId),
-    queryFn: async () => {
-      const { data, error } = await api.GET('/api/projects/{projectId}/tasks', {
-        params: { path: { projectId } },
-      });
-      if (error) throw toError(error, 'Impossible de charger les taches');
-      return data;
-    },
+    queryFn: async () =>
+      unwrap(
+        await api.GET('/api/projects/{projectId}/tasks', {
+          params: { path: { projectId } },
+        }),
+        'Impossible de charger les taches',
+      ),
   });
 }
 
@@ -57,17 +54,14 @@ export function useCreateTask(projectId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (title: string) => {
-      const { data, error } = await api.POST(
-        '/api/projects/{projectId}/tasks',
-        {
+    mutationFn: async (title: string) =>
+      unwrap(
+        await api.POST('/api/projects/{projectId}/tasks', {
           params: { path: { projectId } },
           body: { title, priority: 'Medium' },
-        },
-      );
-      if (error) throw toError(error, 'Creation de la tache impossible');
-      return data;
-    },
+        }),
+        'Creation de la tache impossible',
+      ),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) }),
   });

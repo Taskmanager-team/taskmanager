@@ -7,6 +7,9 @@ export function Layout() {
     <div className="layout">
       <header className="layout-header">
         <NavLink to="/" className="brand">
+          <span className="brand-mark" aria-hidden="true">
+            T
+          </span>
           TaskManager
         </NavLink>
         <span className={USE_MOCKS ? 'badge badge-mock' : 'badge badge-live'}>
