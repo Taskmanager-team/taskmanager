@@ -10,7 +10,7 @@ namespace TaskManager.Domain.ValueObjects
 {
     public sealed class Email : IEquatable<Email>
     {
-        public string value { get; private set ;}
+        public string Value { get; } = null!;
 
         private Email() { }
         public Email(string value)
@@ -27,7 +27,13 @@ namespace TaskManager.Domain.ValueObjects
             {
                 throw new DomainExceptions("Email n'est pas valide");
             }
-            value = value.ToLowerInvariant();
+            Value = value.ToLowerInvariant();
         }
+
+        public bool Equals(Email? other) => other is not null && Value == other.Value;
+
+        public override bool Equals(object? obj) => Equals(obj as Email);
+
+        public override int GetHashCode() => Value.GetHashCode(StringComparison.Ordinal);
     }
 }
