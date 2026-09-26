@@ -6,6 +6,7 @@ namespace TaskManager.Application.Interfaces
         IProjectRepository Projects { get; }
         IWorkspaceRepository Workspaces { get; }
         IUserRepository Users { get; }
+        IRefreshTokenRepository RefreshTokens {get;}
 
         Task<int> SaveChangesAsync(CancellationToken ct = default);
     }

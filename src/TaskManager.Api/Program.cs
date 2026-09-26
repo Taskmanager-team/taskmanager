@@ -11,6 +11,8 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
