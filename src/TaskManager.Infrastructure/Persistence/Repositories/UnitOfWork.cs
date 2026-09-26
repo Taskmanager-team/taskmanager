@@ -11,13 +11,15 @@ namespace TaskManager.Infrastructure.Persistence.Repositories
         public IProjectRepository Projects { get; }
         public IWorkspaceRepository Workspaces { get; }
         public IUserRepository Users { get; }
+        public IRefreshTokenRepository RefreshTokens{ get; }
 
         public UnitOfWork(
             ApplicationDbContext context,
             ITaskRepository taskRepository,
             IProjectRepository projectRepository,
             IWorkspaceRepository workspaceRepository,
-            IUserRepository userRepository
+            IUserRepository userRepository,
+            IRefreshTokenRepository refreshTokenRepository
             )
         {
             _context = context;
@@ -25,6 +27,7 @@ namespace TaskManager.Infrastructure.Persistence.Repositories
             Projects = projectRepository;
             Workspaces = workspaceRepository;
             Users = userRepository;
+            RefreshTokens = refreshTokenRepository ;
         }
 
         public Task<int> SaveChangesAsync(CancellationToken ct = default)
