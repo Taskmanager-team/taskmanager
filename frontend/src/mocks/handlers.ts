@@ -69,16 +69,21 @@ const tasks: TaskItemDto[] = [
 ];
 
 export const handlers = [
-  http.post(url('/api/auth/login'), () =>
+  /*
+   * Aligne sur ce que renvoie reellement AuthController : deux tokens, pas
+   * d'objet `user` ni de date d'expiration.
+   *
+   * ATTENTION : `accessToken` n'est pas un vrai JWT. Si le code lit l'identite
+   * de l'utilisateur dans les claims, il faudra que ce mock renvoie un jeton
+   * de forme JWT, sinon le decodage echouera en mode mocks alors qu'il
+   * marchera contre le vrai backend.
+   *
+   * A completer : POST /auth/register et POST /auth/refresh ne sont pas mockes.
+   */
+  http.post(url('/auth/login'), () =>
     HttpResponse.json({
       accessToken: 'fake-token-123',
       refreshToken: 'fake-refresh-456',
-      expiresAtUtc: new Date(Date.now() + 3_600_000).toISOString(),
-      user: {
-        id: '1',
-        email: 'demo@taskflow.pro',
-        fullName: 'Utilisateur Demo',
-      },
     }),
   ),
 

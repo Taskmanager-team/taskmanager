@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/api/auth/register": {
+    "/auth/register": {
         parameters: {
             query?: never;
             header?: never;
@@ -27,23 +27,31 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Compte cree */
+                /** @description Compte cree. Ne renvoie pas de token : il faut enchainer sur /auth/login. */
                 201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["AuthResponse"];
+                        "application/json": components["schemas"]["RegisterResponse"];
                     };
                 };
-                400: components["responses"]["ValidationError"];
+                /** @description Creation refusee (regles de mot de passe Identity notamment) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
                 /** @description Email deja utilise */
                 409: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ApiError"];
                     };
                 };
             };
@@ -54,7 +62,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/auth/login": {
+    "/auth/login": {
         parameters: {
             query?: never;
             header?: never;
@@ -92,7 +100,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ApiError"];
                     };
                 };
             };
@@ -103,7 +111,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/auth/refresh-token": {
+    "/auth/refresh": {
         parameters: {
             query?: never;
             header?: never;
@@ -128,7 +136,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Nouveau couple de tokens */
+                /** @description Nouveau couple de tokens (l'ancien refresh token est revoque) */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -143,7 +151,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ApiError"];
                     };
                 };
             };
@@ -1100,7 +1108,8 @@ export interface components {
             /** Format: email */
             email: string;
             password: string;
-            fullName: string;
+            firstName: string;
+            lastName: string;
         };
         LoginRequest: {
             /** Format: email */
@@ -1110,16 +1119,22 @@ export interface components {
         AuthResponse: {
             accessToken?: string;
             refreshToken?: string;
-            /** Format: date-time */
-            expiresAtUtc?: string;
-            user?: components["schemas"]["UserDto"];
+        };
+        RegisterResponse: {
+            /** Format: uuid */
+            id?: string;
+        };
+        ApiError: {
+            message?: string;
+            errors?: string[];
         };
         UserDto: {
             /** Format: uuid */
             id?: string;
             /** Format: email */
             email?: string;
-            fullName?: string;
+            firstName?: string;
+            lastName?: string;
         };
         WorkspaceDto: {
             /** Format: uuid */

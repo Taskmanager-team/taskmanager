@@ -23,7 +23,9 @@ tags:
 paths:
 
   # ---------- AUTH ----------
-  /api/auth/register:
+  # NOTE : les routes d'auth ne portent pas le prefixe /api, contrairement au
+  # reste de l'API. C'est ce qu'expose reellement AuthController ([Route("auth")]).
+  /auth/register:
     post:
       tags: [Auth]
       summary: Creer un compte
@@ -35,21 +37,25 @@ paths:
               $ref: '#/components/schemas/RegisterRequest'
       responses:
         '201':
-          description: Compte cree
+          description: "Compte cree. Ne renvoie pas de token : il faut enchainer sur /auth/login."
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
+                $ref: '#/components/schemas/RegisterResponse'
         '409':
           description: Email deja utilise
           content:
-            application/problem+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/ProblemDetails'
+                $ref: '#/components/schemas/ApiError'
         '400':
-          $ref: '#/components/responses/ValidationError'
+          description: Creation refusee (regles de mot de passe Identity notamment)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
 
-  /api/auth/login:
+  /auth/login:
     post:
       tags: [Auth]
       summary: Se connecter
@@ -69,11 +75,11 @@ paths:
         '401':
           description: Identifiants invalides
           content:
-            application/problem+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/ProblemDetails'
+                $ref: '#/components/schemas/ApiError'
 
-  /api/auth/refresh-token:
+  /auth/refresh:
     post:
       tags: [Auth]
       summary: Renouveler le token via le refresh token
@@ -89,7 +95,7 @@ paths:
                   type: string
       responses:
         '200':
-          description: Nouveau couple de tokens
+          description: Nouveau couple de tokens (l'ancien refresh token est revoque)
           content:
             application/json:
               schema:
@@ -97,9 +103,9 @@ paths:
         '401':
           description: Refresh token invalide, expire ou deja utilise
           content:
-            application/problem+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/ProblemDetails'
+                $ref: '#/components/schemas/ApiError'
 
   # ---------- WORKSPACES ----------
   /api/workspaces:
@@ -765,11 +771,12 @@ components:
     # ----- auth -----
     RegisterRequest:
       type: object
-      required: [email, password, fullName]
+      required: [email, password, firstName, lastName]
       properties:
         email: { type: string, format: email }
         password: { type: string, minLength: 8 }
-        fullName: { type: string, maxLength: 150 }
+        firstName: { type: string, maxLength: 100 }
+        lastName: { type: string, maxLength: 100 }
 
     LoginRequest:
       type: object
@@ -778,21 +785,38 @@ components:
         email: { type: string, format: email }
         password: { type: string }
 
+    # Le backend ne renvoie que les deux tokens. L'identite de l'utilisateur et
+    # la date d'expiration se lisent dans les claims du JWT (sub, email,
+    # domainUserId, exp), pas dans le corps de la reponse.
     AuthResponse:
       type: object
       properties:
         accessToken: { type: string }
         refreshToken: { type: string }
-        expiresAtUtc: { type: string, format: date-time }
-        user:
-          $ref: '#/components/schemas/UserDto'
+
+    RegisterResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+
+    # Format d'erreur reellement emis par AuthController. A remplacer par
+    # ProblemDetails / ValidationProblemDetails quand SCRUM-33 sera livre :
+    # `errors` est ici une liste plate de messages, sans nom de champ.
+    ApiError:
+      type: object
+      properties:
+        message: { type: string }
+        errors:
+          type: array
+          items: { type: string }
 
     UserDto:
       type: object
       properties:
         id: { type: string, format: uuid }
         email: { type: string, format: email }
-        fullName: { type: string }
+        firstName: { type: string }
+        lastName: { type: string }
 
     # ----- workspaces -----
     WorkspaceDto:
