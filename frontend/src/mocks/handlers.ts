@@ -75,18 +75,60 @@ const DEMO_PASSWORD = 'Demo1234!';
 const DEMO_IDENTITY_ID = '11111111-1111-1111-1111-111111111111';
 const DEMO_USER_ID = '1';
 
-const accounts = new Map<string, string>();
+/**
+ * Etat du faux backend. Il est persiste dans localStorage : sans cela, un
+ * simple rechargement de page reinitialiserait le module, le refresh token
+ * stocke par l'application ne correspondrait plus a rien, et le developpeur
+ * serait deconnecte a chaque F5. C'est aussi ce qui rend la restauration de
+ * session testable sans backend.
+ */
+const MOCK_STATE_KEY = 'taskmanager.mockAuthState';
 
-let validRefreshToken: string | null = null;
-let sessionEmail = '';
+type MockAuthState = {
+  accounts: Record<string, string>;
+  validRefreshToken: string | null;
+  sessionEmail: string;
+};
+
+function loadState(): MockAuthState {
+  const empty: MockAuthState = {
+    accounts: {},
+    validRefreshToken: null,
+    sessionEmail: '',
+  };
+
+  try {
+    const raw = localStorage.getItem(MOCK_STATE_KEY);
+    if (!raw) return empty;
+    const parsed = JSON.parse(raw) as Partial<MockAuthState>;
+    return {
+      accounts: parsed.accounts ?? {},
+      validRefreshToken: parsed.validRefreshToken ?? null,
+      sessionEmail: parsed.sessionEmail ?? '',
+    };
+  } catch {
+    return empty;
+  }
+}
+
+const state = loadState();
+
+function saveState(): void {
+  try {
+    localStorage.setItem(MOCK_STATE_KEY, JSON.stringify(state));
+  } catch {
+    // Stockage indisponible : on reste en memoire pour la session en cours.
+  }
+}
 
 function base64Url(value: string): string {
   return btoa(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 function issueTokens(email: string) {
-  sessionEmail = email;
-  validRefreshToken = `refresh-${crypto.randomUUID()}`;
+  state.sessionEmail = email;
+  state.validRefreshToken = `refresh-${crypto.randomUUID()}`;
+  saveState();
 
   const header = base64Url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const payload = base64Url(
@@ -100,7 +142,7 @@ function issueTokens(email: string) {
 
   return {
     accessToken: `${header}.${payload}.signature-de-test`,
-    refreshToken: validRefreshToken,
+    refreshToken: state.validRefreshToken,
   };
 }
 
@@ -144,7 +186,7 @@ export const handlers = [
     };
 
     const email = (body.email ?? '').trim().toLowerCase();
-    const registered = accounts.get(email);
+    const registered = state.accounts[email];
     const valid =
       body.password === DEMO_PASSWORD ||
       (registered !== undefined && registered === body.password);
@@ -167,7 +209,7 @@ export const handlers = [
 
     const email = (body.email ?? '').trim().toLowerCase();
 
-    if (email === 'taken@test.com' || accounts.has(email)) {
+    if (email === 'taken@test.com' || email in state.accounts) {
       return HttpResponse.json(
         { message: 'Cet email est deja utilise' },
         { status: 409 },
@@ -182,7 +224,8 @@ export const handlers = [
       );
     }
 
-    accounts.set(email, body.password ?? '');
+    state.accounts[email] = body.password ?? '';
+    saveState();
 
     return HttpResponse.json({ id: crypto.randomUUID() }, { status: 201 });
   }),
@@ -190,14 +233,14 @@ export const handlers = [
   http.post(url('/auth/refresh'), async ({ request }) => {
     const body = (await request.json()) as { refreshToken?: string };
 
-    if (!body.refreshToken || body.refreshToken !== validRefreshToken) {
+    if (!body.refreshToken || body.refreshToken !== state.validRefreshToken) {
       return HttpResponse.json(
         { message: 'Refresh token invalide' },
         { status: 401 },
       );
     }
 
-    return HttpResponse.json(issueTokens(sessionEmail));
+    return HttpResponse.json(issueTokens(state.sessionEmail));
   }),
 
   http.get(
