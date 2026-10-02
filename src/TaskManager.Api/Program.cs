@@ -4,6 +4,7 @@ using TaskManager.Application;
 using TaskManager.Application.Common.Interfaces;
 using TaskManager.Infrastructure.Identity;
 using TaskManager.Infrastructure.Persistence;
+using TaskManager.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
