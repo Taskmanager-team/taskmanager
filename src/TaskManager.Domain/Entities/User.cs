@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TaskManager.Domain.Common;
 using TaskManager.Domain.Exceptions;
+using TaskManager.Domain.ValueObjects;
+using Email = TaskManager.Domain.Common.Email;
 
 namespace TaskManager.Domain.Entities
 {
@@ -14,22 +11,39 @@ namespace TaskManager.Domain.Entities
         public string FirstName { get; private set; }
         public string LastName { get; private set; }
         public Email Email { get; private set; } = null!;
+        public Guid IdentityUserId { get; private set; }
+       
+
         private User() { } // requis par EF Core
-        public User(string firstName, string lastName, string email, string passwordHash)
+
+        private User(Guid identityUserId, string firstName, string lastName, string email)
         {
+            if (identityUserId == Guid.Empty)
+                throw new DomainExceptions("L'identifiant d'identité est obligatoire.");
             if (string.IsNullOrWhiteSpace(firstName))
                 throw new DomainExceptions("Le prénom est obligatoire.");
             if (string.IsNullOrWhiteSpace(lastName))
                 throw new DomainExceptions("Le nom est obligatoire.");
             if (string.IsNullOrWhiteSpace(email))
                 throw new DomainExceptions("L'email est obligatoire.");
-            if (string.IsNullOrWhiteSpace(passwordHash))
-                throw new DomainExceptions("Le mot de passe est obligatoire.");
 
+            IdentityUserId = identityUserId;
             FirstName = firstName;
             LastName = lastName;
             Email = TaskManager.Domain.Common.Email.Create(email);
 
+        }
+
+        public static User Create(Guid identityUserId, string firstName, string lastName, string email)
+        {
+            return new User(identityUserId, firstName, lastName, email);
+        }
+
+        public void ChangeEmail(string newEmail)
+        {
+            if (string.IsNullOrWhiteSpace(newEmail))
+                throw new DomainExceptions("L'email est obligatoire.");
+            Email = TaskManager.Domain.Common.Email.Create(newEmail);
         }
     }
 }

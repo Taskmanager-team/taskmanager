@@ -1,11 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TaskManager.Domain.Enums;
 using TaskManager.Domain.Common;
-using TaskManager.Domain.Enums;
 using TaskManager.Domain.Exceptions;
 
 namespace TaskManager.Domain.Entities
@@ -14,9 +13,9 @@ namespace TaskManager.Domain.Entities
     {
         public Guid UserId { get; private set; }
 
-        public string Title { get; private set; }
+        public string Title { get; private set; } = string.Empty;
 
-        public string Message { get; private set; }
+        public string Message { get; private set; } = string.Empty;
 
         public NotificationType Type { get; private set; }
 
@@ -25,8 +24,6 @@ namespace TaskManager.Domain.Entities
         public Guid? TaskId { get; private set; }
 
         public Guid? ProjectId { get; private set; }
-
-        public DateTime CreatedAt { get; private set; }
 
 
 

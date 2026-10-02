@@ -1,0 +1,36 @@
+import { NavLink, Outlet } from 'react-router-dom';
+import { USE_MOCKS } from '../api/config';
+import { useAuth } from '../auth/useAuth';
+
+/** Cadre commun a toutes les pages : le contenu de la route s'affiche dans <Outlet />. */
+export function Layout() {
+  const { user, logout } = useAuth();
+
+  return (
+    <div className="layout">
+      <header className="layout-header">
+        <NavLink to="/" className="brand">
+          <span className="brand-mark" aria-hidden="true">
+            T
+          </span>
+          TaskManager
+        </NavLink>
+        <span className={USE_MOCKS ? 'badge badge-mock' : 'badge badge-live'}>
+          {USE_MOCKS ? 'Donnees mockees (MSW)' : 'API reelle'}
+        </span>
+        {user && (
+          <div className="layout-user">
+            <span className="meta">{user.email}</span>
+            <button type="button" className="logout" onClick={logout}>
+              Deconnexion
+            </button>
+          </div>
+        )}
+      </header>
+
+      <main className="layout-main">
+        <Outlet />
+      </main>
+    </div>
+  );
+}
