@@ -1,0 +1,26 @@
+name: Domain tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test-domain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+      - name: Execute Domain tests and collect coverage
+        run: dotnet test tests/TaskManager.Domain.Tests/TaskManager.Domain.Tests.csproj --configuration Release --collect:"XPlat Code Coverage" --results-directory TestResults
+      - name: Display coverage summary
+        run: |
+          dotnet tool install --global dotnet-reportgenerator-globaltool
+          reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:"TextSummary"
+          cat coverage-report/Summary.txt
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: domain-coverage
+          path: coverage-report

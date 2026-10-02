@@ -1,14 +1,18 @@
 using TaskManager.Domain.Common;
 using TaskManager.Domain.Exceptions;
+using TaskManager.Domain.ValueObjects;
+using Email = TaskManager.Domain.Common.Email;
 
 namespace TaskManager.Domain.Entities
 {
     public class User : BaseEntity
     {
+       
+        public string FirstName { get; private set; }
+        public string LastName { get; private set; }
+        public Email Email { get; private set; } = null!;
         public Guid IdentityUserId { get; private set; }
-        public string FirstName { get; private set; } = string.Empty;
-        public string LastName { get; private set; } = string.Empty;
-        public string Email { get; private set; } = string.Empty;
+       
 
         private User() { } // requis par EF Core
 
@@ -26,7 +30,8 @@ namespace TaskManager.Domain.Entities
             IdentityUserId = identityUserId;
             FirstName = firstName;
             LastName = lastName;
-            Email = email;
+            Email = TaskManager.Domain.Common.Email.Create(email);
+
         }
 
         public static User Create(Guid identityUserId, string firstName, string lastName, string email)
@@ -38,7 +43,7 @@ namespace TaskManager.Domain.Entities
         {
             if (string.IsNullOrWhiteSpace(newEmail))
                 throw new DomainExceptions("L'email est obligatoire.");
-            Email = newEmail;
+            Email = TaskManager.Domain.Common.Email.Create(newEmail);
         }
     }
 }

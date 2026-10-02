@@ -74,7 +74,7 @@ namespace TaskManager.Domain.Entities
 
 
         // Factory Method
-        public static TaskItem Create(
+        internal static TaskItem Create(
             Guid projectId,
             string title,
             TaskPriority priority,
