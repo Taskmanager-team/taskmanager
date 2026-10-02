@@ -20,11 +20,7 @@ namespace TaskManager.Infrastructure.Persistence.Configuration
             builder.HasIndex(t => t.ProjectId);
             builder.HasIndex(t => t.Status);
 
-            // relation 1..N avec User via AssignedUserId
-            builder.HasOne<User>()
-                .WithMany(u => u.AssignedTasks)
-                .HasForeignKey(t => t.AssignedUserId)
-                .OnDelete(DeleteBehavior.SetNull);
+            
         }
     }
 }

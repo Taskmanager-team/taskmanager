@@ -4,10 +4,13 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using TaskManager.Infrastructure.Identity;
 using TaskManager.Domain.Entities;
+using TaskManager.Application.Common.Interfaces;
 
 namespace TaskManager.Infrastructure.Persistence
 {
-    public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
+    public class ApplicationDbContext
+        : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>,
+          IApplicationDbContext
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)

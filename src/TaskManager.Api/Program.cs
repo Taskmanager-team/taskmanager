@@ -1,4 +1,20 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using TaskManager.Application;
+using TaskManager.Application.Common.Interfaces;
+using TaskManager.Infrastructure.Identity;
+using TaskManager.Infrastructure.Persistence;
+
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddApplication();
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("Default")));
+
+builder.Services.AddScoped<IApplicationDbContext>(serviceProvider =>
+    serviceProvider.GetRequiredService<ApplicationDbContext>());
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

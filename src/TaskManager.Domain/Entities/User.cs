@@ -13,6 +13,7 @@ namespace TaskManager.Domain.Entities
        
         public string FirstName { get; private set; }
         public string LastName { get; private set; }
+        public Email Email { get; private set; } = null!;
         private User() { } // requis par EF Core
         public User(string firstName, string lastName, string email, string passwordHash)
         {
@@ -27,7 +28,8 @@ namespace TaskManager.Domain.Entities
 
             FirstName = firstName;
             LastName = lastName;
-      
+            Email = TaskManager.Domain.Common.Email.Create(email);
+
         }
     }
 }
