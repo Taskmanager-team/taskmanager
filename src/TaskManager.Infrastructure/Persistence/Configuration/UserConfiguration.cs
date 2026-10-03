@@ -28,6 +28,9 @@ namespace TaskManager.Infrastructure.Persistence.Configuration
                 .HasMaxLength(100);
 
             builder.Property(u => u.Email)
+                .HasConversion(
+                    email => email.Value,
+                    value => Email.Create(value))
                 .HasColumnName("Email")
                 .HasMaxLength(320)
                 .IsRequired();

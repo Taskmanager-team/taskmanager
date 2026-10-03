@@ -23,13 +23,8 @@ namespace TaskManager.Domain.Entities
 
         public Guid ProjectManagerId { get; private set; }
 
-<<<<<<< HEAD
         public ICollection<TaskItem> Tasks { get; private set; }
             = new List<TaskItem>();
-
-=======
-        public ICollection<TaskItem> Tasks { get; private set; } = new List<TaskItem>();
->>>>>>> origin/main
        
 
     // Constructeur privé pour EF Core
