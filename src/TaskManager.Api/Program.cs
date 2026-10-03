@@ -1,11 +1,26 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using TaskManager.Application;
 using TaskManager.Application.Common.Interfaces;
+using TaskManager.Application.Interfaces;
+using TaskManager.Infrastructure.Auth;
 using TaskManager.Infrastructure.Identity;
 using TaskManager.Infrastructure.Persistence;
+using TaskManager.Infrastructure.Persistence.Repositories;
+using TaskManager.Api.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var jwtSettings = builder.Configuration
+    .GetSection("JwtSettings")
+    .Get<JwtSettings>()
+    ?? throw new InvalidOperationException("JwtSettings configuration is missing.");
+
+builder.Services.Configure<JwtSettings>(
+    builder.Configuration.GetSection("JwtSettings"));
 
 builder.Services.AddAuthentication(options =>
 {
@@ -27,6 +42,8 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddApplication();
+
 builder.Services.AddAuthorization();
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -38,6 +55,8 @@ builder.Services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddControllers();
 var app = builder.Build();
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

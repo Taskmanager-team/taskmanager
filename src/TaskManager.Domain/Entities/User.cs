@@ -8,8 +8,8 @@ namespace TaskManager.Domain.Entities
     public class User : BaseEntity
     {
        
-        public string FirstName { get; private set; }
-        public string LastName { get; private set; }
+        public string FirstName { get; private set; } = string.Empty;
+        public string LastName { get; private set; } = string.Empty;
         public Email Email { get; private set; } = null!;
         public Guid IdentityUserId { get; private set; }
        
