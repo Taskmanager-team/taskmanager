@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using TaskManager.Application.Interfaces;
+using TaskManager.Domain.Common;
 using TaskManager.Domain.Entities;
 using TaskManager.Infrastructure.Persistence;
 
@@ -28,9 +29,11 @@ namespace TaskManager.Infrastructure.Persistence.Repositories
 
         public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
         {
+            var emailValue = Email.Create(email);
+
             return await _context.Members
                 .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Email == email, ct);
+                .FirstOrDefaultAsync(u => u.Email == emailValue, ct);
         }
 
         public async Task AddAsync(User user, CancellationToken ct = default)
