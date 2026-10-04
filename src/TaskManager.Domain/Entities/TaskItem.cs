@@ -30,7 +30,10 @@ namespace TaskManager.Domain.Entities
 
         public IReadOnlyCollection<Comments> Comments
             => _comments.AsReadOnly();
-
+       public void AddComment(string content, Guid authorId)
+        {
+            _comments.Add(TaskManager.Domain.Entities.Comments.create(content, this.Id, authorId));
+        }
 
         public IReadOnlyCollection<Guid> AssignedUserIds
             => _assignedUserIds.AsReadOnly();
