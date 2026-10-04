@@ -1,38 +1,16 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
-using TaskManager.Application.Interfaces;
-using TaskManager.Infrastructure.Persistence.Repositories;
-using TaskManager.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using TaskManager.Application;
+using TaskManager.Application.Common.Interfaces;
 using TaskManager.Infrastructure.Identity;
 using TaskManager.Infrastructure.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text;
+using TaskManager.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
-builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
-builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
-builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
-{
-    // Règles de mot de passe
-    options.Password.RequireDigit = true;
-    options.Password.RequireLowercase = true;
-    options.Password.RequireUppercase = true;
-    options.Password.RequireNonAlphanumeric = true;
-    options.Password.RequiredLength = 8;
-
-    // Email unique
-    options.User.RequireUniqueEmail = true;
-})
-.AddEntityFrameworkStores<ApplicationDbContext>()
-.AddDefaultTokenProviders();
-
-var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
 
 builder.Services.AddAuthentication(options =>
 {

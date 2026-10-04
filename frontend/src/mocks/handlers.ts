@@ -1,6 +1,7 @@
 import { http, HttpResponse } from 'msw';
 import { API_BASE_URL } from '../api/config';
 import type { ProjectDto, TaskItemDto, WorkspaceDto } from '../api/client';
+import { decodeJwt, isExpired } from '../auth/jwt';
 
 /** Les mocks suivent la meme base d'URL que le client, mocks ou API reelle. */
 const url = (path: string) => `${API_BASE_URL}${path}`;
@@ -68,29 +69,200 @@ const tasks: TaskItemDto[] = [
   },
 ];
 
-export const handlers = [
-  http.post(url('/api/auth/login'), () =>
-    HttpResponse.json({
-      accessToken: 'fake-token-123',
-      refreshToken: 'fake-refresh-456',
-      expiresAtUtc: new Date(Date.now() + 3_600_000).toISOString(),
-      user: {
-        id: '1',
-        email: 'demo@taskflow.pro',
-        fullName: 'Utilisateur Demo',
-      },
+/** Baisse cette valeur a 5 pour voir le cycle 401 -> refresh -> retry aussitot. */
+const ACCESS_TOKEN_TTL_SECONDS = 60;
+const DEMO_PASSWORD = 'Demo1234!';
+const DEMO_IDENTITY_ID = '11111111-1111-1111-1111-111111111111';
+const DEMO_USER_ID = '1';
+
+/**
+ * Etat du faux backend. Il est persiste dans localStorage : sans cela, un
+ * simple rechargement de page reinitialiserait le module, le refresh token
+ * stocke par l'application ne correspondrait plus a rien, et le developpeur
+ * serait deconnecte a chaque F5. C'est aussi ce qui rend la restauration de
+ * session testable sans backend.
+ */
+const MOCK_STATE_KEY = 'taskmanager.mockAuthState';
+
+type MockAuthState = {
+  accounts: Record<string, string>;
+  validRefreshToken: string | null;
+  sessionEmail: string;
+};
+
+function loadState(): MockAuthState {
+  const empty: MockAuthState = {
+    accounts: {},
+    validRefreshToken: null,
+    sessionEmail: '',
+  };
+
+  try {
+    const raw = localStorage.getItem(MOCK_STATE_KEY);
+    if (!raw) return empty;
+    const parsed = JSON.parse(raw) as Partial<MockAuthState>;
+    return {
+      accounts: parsed.accounts ?? {},
+      validRefreshToken: parsed.validRefreshToken ?? null,
+      sessionEmail: parsed.sessionEmail ?? '',
+    };
+  } catch {
+    return empty;
+  }
+}
+
+const state = loadState();
+
+function saveState(): void {
+  try {
+    localStorage.setItem(MOCK_STATE_KEY, JSON.stringify(state));
+  } catch {
+    // Stockage indisponible : on reste en memoire pour la session en cours.
+  }
+}
+
+function base64Url(value: string): string {
+  return btoa(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function issueTokens(email: string) {
+  state.sessionEmail = email;
+  state.validRefreshToken = `refresh-${crypto.randomUUID()}`;
+  saveState();
+
+  const header = base64Url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const payload = base64Url(
+    JSON.stringify({
+      sub: DEMO_IDENTITY_ID,
+      email,
+      domainUserId: DEMO_USER_ID,
+      exp: Math.floor(Date.now() / 1000) + ACCESS_TOKEN_TTL_SECONDS,
     }),
+  );
+
+  return {
+    accessToken: `${header}.${payload}.signature-de-test`,
+    refreshToken: state.validRefreshToken,
+  };
+}
+
+function identityPasswordErrors(password: string): string[] {
+  const errors: string[] = [];
+  if (password.length < 8) {
+    errors.push('Passwords must be at least 8 characters.');
+  }
+  if (!/[0-9]/.test(password)) {
+    errors.push("Passwords must have at least one digit ('0'-'9').");
+  }
+  if (!/[A-Z]/.test(password)) {
+    errors.push("Passwords must have at least one uppercase ('A'-'Z').");
+  }
+  if (!/[^a-zA-Z0-9]/.test(password)) {
+    errors.push('Passwords must have at least one non alphanumeric character.');
+  }
+  return errors;
+}
+
+function unauthorized(request: Request) {
+  const header = request.headers.get('Authorization') ?? '';
+  const claims = header.startsWith('Bearer ')
+    ? decodeJwt(header.slice(7))
+    : null;
+
+  if (!claims || isExpired(claims, 0)) {
+    return HttpResponse.json(
+      { message: 'Token absent ou expire' },
+      { status: 401 },
+    );
+  }
+  return null;
+}
+
+export const handlers = [
+  http.post(url('/auth/login'), async ({ request }) => {
+    const body = (await request.json()) as {
+      email?: string;
+      password?: string;
+    };
+
+    const email = (body.email ?? '').trim().toLowerCase();
+    const registered = state.accounts[email];
+    const valid =
+      body.password === DEMO_PASSWORD ||
+      (registered !== undefined && registered === body.password);
+
+    if (!valid) {
+      return HttpResponse.json(
+        { message: 'Email ou mot de passe incorrect' },
+        { status: 401 },
+      );
+    }
+
+    return HttpResponse.json(issueTokens(body.email ?? ''));
+  }),
+
+  http.post(url('/auth/register'), async ({ request }) => {
+    const body = (await request.json()) as {
+      email?: string;
+      password?: string;
+    };
+
+    const email = (body.email ?? '').trim().toLowerCase();
+
+    if (email === 'taken@test.com' || email in state.accounts) {
+      return HttpResponse.json(
+        { message: 'Cet email est deja utilise' },
+        { status: 409 },
+      );
+    }
+
+    const errors = identityPasswordErrors(body.password ?? '');
+    if (errors.length > 0) {
+      return HttpResponse.json(
+        { message: 'Erreur lors de la creation de l utilisateur', errors },
+        { status: 400 },
+      );
+    }
+
+    state.accounts[email] = body.password ?? '';
+    saveState();
+
+    return HttpResponse.json({ id: crypto.randomUUID() }, { status: 201 });
+  }),
+
+  http.post(url('/auth/refresh'), async ({ request }) => {
+    const body = (await request.json()) as { refreshToken?: string };
+
+    if (!body.refreshToken || body.refreshToken !== state.validRefreshToken) {
+      return HttpResponse.json(
+        { message: 'Refresh token invalide' },
+        { status: 401 },
+      );
+    }
+
+    return HttpResponse.json(issueTokens(state.sessionEmail));
+  }),
+
+  http.get(
+    url('/api/workspaces'),
+    ({ request }) => unauthorized(request) ?? HttpResponse.json(workspaces),
   ),
 
-  http.get(url('/api/workspaces'), () => HttpResponse.json(workspaces)),
-
-  http.get(url('/api/workspaces/:workspaceId/projects'), ({ params }) =>
-    HttpResponse.json(
-      projects.filter((project) => project.workspaceId === params.workspaceId),
-    ),
+  http.get(
+    url('/api/workspaces/:workspaceId/projects'),
+    ({ request, params }) =>
+      unauthorized(request) ??
+      HttpResponse.json(
+        projects.filter(
+          (project) => project.workspaceId === params.workspaceId,
+        ),
+      ),
   ),
 
-  http.get(url('/api/projects/:projectId/tasks'), ({ params }) => {
+  http.get(url('/api/projects/:projectId/tasks'), ({ request, params }) => {
+    const denied = unauthorized(request);
+    if (denied) return denied;
+
     const items = tasks.filter((task) => task.projectId === params.projectId);
     return HttpResponse.json({
       items,
@@ -103,6 +275,9 @@ export const handlers = [
   http.post(
     url('/api/projects/:projectId/tasks'),
     async ({ params, request }) => {
+      const denied = unauthorized(request);
+      if (denied) return denied;
+
       const body = (await request.json()) as {
         title: string;
         priority: TaskItemDto['priority'];

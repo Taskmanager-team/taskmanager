@@ -1,13 +1,38 @@
 import createClient from 'openapi-fetch';
+import { refreshSession } from '../auth/session';
+import { getAccessToken } from '../auth/tokenStorage';
 import { API_BASE_URL } from './config';
 import type { components, paths } from './schema';
 
-/**
- * Client HTTP type par le contrat OpenAPI.
- * Les chemins et les reponses viennent de schema.d.ts, genere par
- * `npm run generate:api` : rien n'est ecrit a la main ici.
- */
 export const api = createClient<paths>({ baseUrl: API_BASE_URL });
+
+const retryable = new Map<string, Request>();
+
+api.use({
+  onRequest({ request, id }) {
+    const token = getAccessToken();
+    if (token) request.headers.set('Authorization', `Bearer ${token}`);
+    retryable.set(id, request.clone());
+    return request;
+  },
+
+  async onResponse({ response, id }) {
+    const retry = retryable.get(id);
+    retryable.delete(id);
+
+    if (response.status !== 401 || !retry) return undefined;
+
+    const refreshed = await refreshSession();
+    if (!refreshed) return undefined;
+
+    retry.headers.set('Authorization', `Bearer ${getAccessToken() ?? ''}`);
+    return fetch(retry);
+  },
+
+  onError({ id }) {
+    retryable.delete(id);
+  },
+});
 
 export type WorkspaceDto = components['schemas']['WorkspaceDto'];
 export type ProjectDto = components['schemas']['ProjectDto'];
@@ -23,11 +48,6 @@ export function toError(problem: unknown, fallback: string): Error {
   return new Error(fallback);
 }
 
-/**
- * Deballe une reponse openapi-fetch. Sans corps ni erreur typee (backend
- * injoignable, reponse vide), on leve un message lisible plutot que de laisser
- * TanStack Query afficher son « data is undefined ».
- */
 export function unwrap<T>(
   result: { data?: T; error?: unknown },
   fallback: string,

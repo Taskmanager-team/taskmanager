@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TaskManager.Domain.Common;
 using TaskManager.Domain.Enums;
+using TaskManager.Domain.Exceptions;
 
 namespace TaskManager.Domain.Entities
 {
@@ -22,7 +23,13 @@ namespace TaskManager.Domain.Entities
 
         public Guid ProjectManagerId { get; private set; }
 
+<<<<<<< HEAD
+        public ICollection<TaskItem> Tasks { get; private set; }
+            = new List<TaskItem>();
+
+=======
         public ICollection<TaskItem> Tasks { get; private set; } = new List<TaskItem>();
+>>>>>>> origin/main
        
 
     // Constructeur privé pour EF Core
@@ -63,6 +70,20 @@ namespace TaskManager.Domain.Entities
            
 
             Name = name.Trim();
+        }
+
+        public TaskItem CreateTask(
+            string title,
+            TaskPriority priority,
+            DateTime? dueDate)
+        {
+            if (Status == ProjectStatus.Archived)
+                throw new DomainExceptions(
+                    "Impossible de créer une tâche dans un projet archivé.");
+
+            var task = TaskItem.Create(Id, title, priority, dueDate);
+            Tasks.Add(task);
+            return task;
         }
 
         // Archiver
