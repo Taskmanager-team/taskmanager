@@ -19,8 +19,8 @@ namespace TaskManager.Domain.Entities
 
         private Comments(string content, Guid taskItemId, Guid authorId)
         {
-            if(TaskItemId==Guid.Empty)throw new DomainExceptions("TaskItemId est obligatoire");
-            if(AuthorId==Guid.Empty)throw new DomainExceptions("AuthorId est obligatoire");
+            if(taskItemId==Guid.Empty)throw new DomainExceptions("TaskItemId est obligatoire");
+            if(authorId==Guid.Empty)throw new DomainExceptions("AuthorId est obligatoire");
             if(string.IsNullOrWhiteSpace(content))throw new DomainExceptions("Content est obligatoire");
 
             Content = content;
