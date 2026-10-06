@@ -4,7 +4,8 @@ import { SkeletonList } from '../components/SkeletonList';
 
 export function ProjectsPage() {
   const { workspaceId = '' } = useParams<{ workspaceId: string }>();
-  const { data, isPending, error } = useProjects(workspaceId);
+  const { data, isPending, error, refetch, isFetching } =
+    useProjects(workspaceId);
 
   return (
     <section>
@@ -12,18 +13,39 @@ export function ProjectsPage() {
         &lsaquo; Workspaces
       </Link>
 
-      <div className="page-head">
-        <h1>Projets</h1>
-        <p className="subtitle">
-          {data ? `${data.length} projet(s) dans cet espace` : ' '}
-        </p>
+      <div className="page-head page-head-row">
+        <div>
+          <h1>Projets</h1>
+          <p className="subtitle">
+            {data ? `${data.length} projet(s) dans cet espace` : ' '}
+          </p>
+        </div>
+        <Link to={`/workspaces/${workspaceId}/members`} className="secondary">
+          Membres
+        </Link>
       </div>
 
       {isPending && <SkeletonList />}
-      {error && <p className="state state-error">{error.message}</p>}
+
+      {error && (
+        <div className="state state-error" role="alert">
+          <p>{error.message}</p>
+          <button
+            type="button"
+            className="retry"
+            onClick={() => void refetch()}
+            disabled={isFetching}
+          >
+            {isFetching ? 'Nouvelle tentative...' : 'Reessayer'}
+          </button>
+        </div>
+      )}
 
       {data && data.length === 0 && (
-        <p className="empty">Aucun projet dans ce workspace.</p>
+        <div className="empty">
+          <p>Aucun projet dans ce workspace.</p>
+          <p className="meta">Les projets crees apparaitront ici.</p>
+        </div>
       )}
 
       {data && data.length > 0 && (

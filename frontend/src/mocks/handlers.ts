@@ -1,12 +1,44 @@
 import { http, HttpResponse } from 'msw';
 import { API_BASE_URL } from '../api/config';
-import type { ProjectDto, TaskItemDto, WorkspaceDto } from '../api/client';
+import type {
+  ProjectDto,
+  TaskItemDto,
+  WorkspaceDto,
+  WorkspaceMemberDto,
+  WorkspaceRole,
+} from '../api/client';
 import { decodeJwt, isExpired } from '../auth/jwt';
 
 /** Les mocks suivent la meme base d'URL que le client, mocks ou API reelle. */
 const url = (path: string) => `${API_BASE_URL}${path}`;
 
-const workspaces: WorkspaceDto[] = [
+/**
+ * Les donnees du faux backend survivent au rechargement de page. Sans cela un
+ * workspace cree disparaissait au premier F5 : genant en developpement, et
+ * surtout en demonstration.
+ */
+function persisted<T>(key: string, seed: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw) as T;
+  } catch {
+    // Stockage indisponible : on retombe sur les donnees d'origine.
+  }
+  return seed;
+}
+
+function persist(key: string, value: unknown): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Stockage indisponible : l'etat reste en memoire pour la session.
+  }
+}
+
+const WORKSPACES_KEY = 'taskmanager.mockWorkspaces';
+const MEMBERS_KEY = 'taskmanager.mockMembers';
+
+const workspaces: WorkspaceDto[] = persisted(WORKSPACES_KEY, [
   {
     id: 'w1',
     name: 'Equipe produit',
@@ -19,7 +51,54 @@ const workspaces: WorkspaceDto[] = [
     myRole: 'Member',
     createdAt: new Date().toISOString(),
   },
-];
+]);
+
+/**
+ * Membres par workspace. L'utilisateur demo est Admin de w1 et simple membre
+ * de w2 : ce couple permet de verifier de visu que les actions reservees aux
+ * Admin disparaissent cote membre.
+ */
+const members: Record<string, WorkspaceMemberDto[]> = persisted(MEMBERS_KEY, {
+  w1: [
+    {
+      userId: '1',
+      email: 'demo@taskflow.pro',
+      fullName: 'Utilisateur Demo',
+      role: 'Admin',
+    },
+    {
+      userId: '2',
+      email: 'sofia@taskflow.pro',
+      fullName: 'Sofia Martin',
+      role: 'Member',
+    },
+  ],
+  w2: [
+    {
+      userId: '3',
+      email: 'karim@taskflow.pro',
+      fullName: 'Karim Benali',
+      role: 'Admin',
+    },
+    {
+      userId: '1',
+      email: 'demo@taskflow.pro',
+      fullName: 'Utilisateur Demo',
+      role: 'Member',
+    },
+  ],
+});
+
+/**
+ * Faux annuaire. Le contrat impose qu'un invite ait deja un compte : tout
+ * email absent d'ici repond 404, comme le fera le backend.
+ */
+const directory: Record<string, { userId: string; fullName: string }> = {
+  'sofia@taskflow.pro': { userId: '2', fullName: 'Sofia Martin' },
+  'karim@taskflow.pro': { userId: '3', fullName: 'Karim Benali' },
+  'lea@taskflow.pro': { userId: '4', fullName: 'Lea Dubois' },
+  'tom@taskflow.pro': { userId: '5', fullName: 'Tom Leroy' },
+};
 
 const projects: ProjectDto[] = [
   {
@@ -246,6 +325,143 @@ export const handlers = [
   http.get(
     url('/api/workspaces'),
     ({ request }) => unauthorized(request) ?? HttpResponse.json(workspaces),
+  ),
+
+  http.post(url('/api/workspaces'), async ({ request }) => {
+    const denied = unauthorized(request);
+    if (denied) return denied;
+
+    const body = (await request.json()) as { name?: string };
+    const name = (body.name ?? '').trim();
+
+    // Meme forme que ValidationProblemDetails du backend (SCRUM-33).
+    if (name.length === 0 || name.length > 150) {
+      return HttpResponse.json(
+        {
+          title: 'Validation failed',
+          status: 400,
+          errors: {
+            name:
+              name.length === 0
+                ? ['Le nom est obligatoire.']
+                : ['Le nom ne doit pas depasser 150 caracteres.'],
+          },
+        },
+        { status: 400 },
+      );
+    }
+
+    const id = `w${crypto.randomUUID().slice(0, 8)}`;
+    const created: WorkspaceDto = {
+      id,
+      name,
+      myRole: 'Admin', // le createur devient Admin (contrat)
+      createdAt: new Date().toISOString(),
+    };
+    workspaces.push(created);
+    members[id] = [
+      {
+        userId: '1',
+        email: 'demo@taskflow.pro',
+        fullName: 'Utilisateur Demo',
+        role: 'Admin',
+      },
+    ];
+
+    persist(WORKSPACES_KEY, workspaces);
+    persist(MEMBERS_KEY, members);
+
+    return HttpResponse.json(created, { status: 201 });
+  }),
+
+  http.get(
+    url('/api/workspaces/:workspaceId/members'),
+    ({ request, params }) => {
+      const denied = unauthorized(request);
+      if (denied) return denied;
+
+      return HttpResponse.json(members[String(params.workspaceId)] ?? []);
+    },
+  ),
+
+  http.post(
+    url('/api/workspaces/:workspaceId/members'),
+    async ({ request, params }) => {
+      const denied = unauthorized(request);
+      if (denied) return denied;
+
+      const workspaceId = String(params.workspaceId);
+      const list = members[workspaceId];
+      if (!list) {
+        return HttpResponse.json(
+          { title: 'Workspace introuvable', status: 404 },
+          { status: 404 },
+        );
+      }
+
+      const body = (await request.json()) as { email?: string };
+      const email = (body.email ?? '').trim().toLowerCase();
+      const known = directory[email];
+
+      if (!known) {
+        return HttpResponse.json(
+          { title: 'Aucun utilisateur avec cet email', status: 404 },
+          { status: 404 },
+        );
+      }
+
+      if (list.some((member) => member.userId === known.userId)) {
+        return HttpResponse.json(
+          { title: 'Deja membre du workspace', status: 409 },
+          { status: 409 },
+        );
+      }
+
+      const invited: WorkspaceMemberDto = {
+        userId: known.userId,
+        email,
+        fullName: known.fullName,
+        role: 'Member',
+      };
+      list.push(invited);
+      persist(MEMBERS_KEY, members);
+
+      return HttpResponse.json(invited, { status: 201 });
+    },
+  ),
+
+  http.patch(
+    url('/api/workspaces/:workspaceId/members/:userId/role'),
+    async ({ request, params }) => {
+      const denied = unauthorized(request);
+      if (denied) return denied;
+
+      const list = members[String(params.workspaceId)] ?? [];
+      const member = list.find((item) => item.userId === params.userId);
+      if (!member) {
+        return HttpResponse.json(
+          { title: 'Membre introuvable', status: 404 },
+          { status: 404 },
+        );
+      }
+
+      const body = (await request.json()) as { role?: WorkspaceRole };
+      const role = body.role ?? 'Member';
+
+      // Le contrat refuse de laisser un workspace sans Admin.
+      const admins = list.filter((item) => item.role === 'Admin');
+      if (role === 'Member' && admins.length === 1 && member.role === 'Admin') {
+        return HttpResponse.json(
+          { title: 'Le workspace doit garder au moins un Admin', status: 409 },
+          { status: 409 },
+        );
+      }
+
+      member.role = role;
+      persist(MEMBERS_KEY, members);
+
+      return HttpResponse.json(member);
+    },
   ),
 
   http.get(

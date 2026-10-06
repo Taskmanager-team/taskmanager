@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthProvider';
 import { Layout } from './components/Layout';
 import { LoginPage } from './pages/LoginPage';
+import { MembersPage } from './pages/MembersPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { TasksPage } from './pages/TasksPage';
@@ -31,6 +32,10 @@ export default function App() {
                 <Route
                   path="/workspaces/:workspaceId"
                   element={<ProjectsPage />}
+                />
+                <Route
+                  path="/workspaces/:workspaceId/members"
+                  element={<MembersPage />}
                 />
                 <Route
                   path="/projects/:projectId/tasks"
