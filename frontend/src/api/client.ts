@@ -35,6 +35,8 @@ api.use({
 });
 
 export type WorkspaceDto = components['schemas']['WorkspaceDto'];
+export type WorkspaceMemberDto = components['schemas']['WorkspaceMemberDto'];
+export type WorkspaceRole = components['schemas']['WorkspaceRole'];
 export type ProjectDto = components['schemas']['ProjectDto'];
 export type TaskItemDto = components['schemas']['TaskItemDto'];
 export type TaskItemStatus = components['schemas']['TaskItemStatus'];

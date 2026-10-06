@@ -550,3 +550,146 @@
     flex-direction: column;
   }
 }
+
+/* ---------- SCRUM-46 : workspaces, membres ---------- */
+
+.page-head-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.secondary {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-h);
+  font-size: 14px;
+  font-weight: 550;
+  white-space: nowrap;
+}
+
+.secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Formulaire court pose au-dessus d'une liste (creation, invitation). */
+.inline-form {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.inline-form .field {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inline-form label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.inline-form input {
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-h);
+}
+
+.inline-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.inline-form input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.inline-form button {
+  margin-top: 25px;
+  padding: 11px 20px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.inline-form button:hover:not(:disabled) {
+  background: var(--accent-h);
+}
+
+.inline-form button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.form-hint {
+  margin-bottom: 20px;
+}
+
+.role-toggle {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text);
+  font-size: 12.5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.role-toggle:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.role-toggle:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.retry {
+  margin-top: 10px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.retry:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.empty .meta {
+  margin-top: 6px;
+}
+
+@media (max-width: 560px) {
+  .inline-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .inline-form button {
+    margin-top: 0;
+  }
+}
